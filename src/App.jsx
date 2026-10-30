@@ -117,10 +117,7 @@ function StaffMgmt({db}){const[e,setE]=useState(null)
 function MenuMgmt({db}){const[e,setE]=useState(null),[c,setC]=useState('')
  return <div><div className="flex gap-2 mb-3"><button className="btn gld" onClick={()=>setE({name:'',cat:db.categories[0],price:0,desc:'',veg:true,img:'',emoji:'🍽️',available:true})}>+ Add item</button><input className="inp max-w-[160px]" placeholder="New category" value={c} onChange={x=>setC(x.target.value)}/><button className="btn bg-cream" onClick={()=>{S.addCategory(c);setC('')}}>Add</button></div>
  <div className="grid md:grid-cols-2 gap-2">{db.menu.map(m=><div key={m.id} className="card p-3 flex justify-between items-center"><div><b>{m.name}</b><p className="text-xs">{m.cat} · {rs(m.price)} · {m.veg?'Veg':'Non-veg'}</p></div><div className="flex gap-2 items-center"><label className="text-xs"><input type="checkbox" checked={m.available} onChange={()=>S.saveItem({...m,available:!m.available})}/> Avail</label><button className="underline text-sm" onClick={()=>setE(m)}>Edit</button><button aria-label="Delete" onClick={()=>S.removeItem(m.id)}><Trash2 size={14}/></button></div></div>)}</div>
- {e&&<Sheet title="Menu item" onClose={()=>setE(null)}><div className="space-y-2"><input className="inp" placeholder="Name" value={e.name} onChange={x=>setE({...e,name:x.target.value})}/><input className="inp" placeholder="Description" value={e.desc} onChange={x=>setE({...e,desc:x.target.value})}/>
- <input className="inp" type="number" placeholder="Price" value={e.price} onChange={x=>setE({...e,price:+x.target.value})}/><select className="inp" value={e.cat} onChange={x=>setE({...e,cat:x.target.value})}>{db.categories.map(k=><option key={k}>{k}</option>)}</select>
- <input className="inp" placeholder="Image URL" value={e.img} onChange={x=>setE({...e,img:x.target.value})}/>{e.img&&<img src={e.img} className="h-24 rounded-xl"/>}<label><input type="checkbox" checked={e.veg} onChange={()=>setE({...e,veg:!e.veg})}/> Veg</label>
- <button className="btn pri w-full" onClick={()=>{S.saveItem(e);setE(null)}}>Save</button></div></Sheet>}</div>}
+ {e&&<DishSheet e={e} setE={setE} db={db}/>}</div>}
 
 // ---- Menu Photos: owner + kitchen/reception staff can add food photos, new dishes and new categories ----
 const shrink=(file,max=640)=>new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file)
@@ -128,9 +125,22 @@ const shrink=(file,max=640)=>new Promise((ok,no)=>{const img=new Image(),u=URL.c
   const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.72))}
  img.onerror=()=>{URL.revokeObjectURL(u);no()};img.src=u})
 const safely=fn=>{try{fn();return true}catch{alert('Could not save – browser storage is full. Try a smaller photo or remove unused photos.');return false}}
-function PhotoBtn({onPick,children,cls='btn bg-cream py-1 text-sm'}){const r=useRef(null)
- return <><input ref={r} type="file" accept="image/*" className="hidden" onChange={async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{onPick(await shrink(f))}catch{alert('Please choose an image file')}}}/>
- <button type="button" className={cls} onClick={()=>r.current.click()}>{children}</button></>}
+const rawRead=f=>new Promise((ok,no)=>{if(f.size>1.5e6)return no();const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})
+function PhotoBtn({onPick,children,cls='btn bg-cream py-1 text-sm'}){
+ return <label className={`${cls} relative inline-flex items-center justify-center gap-2 cursor-pointer overflow-hidden`}>{children}
+  <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={async e=>{const f=e.target.files[0];e.target.value='';if(!f)return
+   try{onPick(await shrink(f))}catch{try{onPick(await rawRead(f))}catch{alert('Could not read this photo. Please choose a JPG or PNG image (under 1.5 MB).')}}}}/></label>}
+const DishSheet=({e,setE,db})=><Sheet title={e.id?'Edit dish':'New dish'} onClose={()=>setE(null)}><div className="space-y-2">
+ {e.img?<img src={e.img} alt="Dish" className="w-full h-44 rounded-xl object-cover"/>:<div className="w-full h-44 rounded-xl bg-cream flex items-center justify-center text-6xl">{e.emoji||'🍽️'}</div>}
+ <div className="flex gap-2"><PhotoBtn cls="btn gld flex-1 text-sm" onPick={d=>setE({...e,img:d})}><Camera size={18}/>{e.img?'Change photo':'Upload photo'}</PhotoBtn>{e.img&&<button type="button" className="btn bg-cream text-sm" onClick={()=>setE({...e,img:''})}>Remove</button>}</div>
+ <input className="inp" placeholder="…or paste an image URL" value={e.img&&e.img.startsWith('data:')?'':e.img} onChange={x=>setE({...e,img:x.target.value})}/>
+ <input className="inp" placeholder="Dish name" value={e.name} onChange={x=>setE({...e,name:x.target.value})}/>
+ <input className="inp" placeholder="Description" value={e.desc} onChange={x=>setE({...e,desc:x.target.value})}/>
+ <input className="inp" type="number" min="0" placeholder="Price" value={e.price} onChange={x=>setE({...e,price:x.target.value})}/>
+ <select className="inp" value={e.cat} onChange={x=>setE({...e,cat:x.target.value})}>{db.categories.map(k=><option key={k}>{k}</option>)}</select>
+ <div className="flex gap-4"><label><input type="checkbox" checked={e.veg} onChange={()=>setE({...e,veg:!e.veg})}/> Veg</label><label><input type="checkbox" checked={e.available} onChange={()=>setE({...e,available:!e.available})}/> Available</label></div>
+ <button className="btn pri w-full" onClick={()=>{if(!e.name.trim())return alert('Dish name required');if(safely(()=>S.saveItem({...e,name:e.name.trim(),price:+e.price||0})))setE(null)}}>Save</button>
+ {e.id&&<button className="btn border border-red-600 text-red-600 w-full" onClick={()=>confirm('Delete this dish?')&&(S.removeItem(e.id),setE(null))}>Delete dish</button>}</div></Sheet>
 function MenuPhotos({db}){const[c,setC]=useState(''),[f,setF]=useState(''),[n,setN]=useState(null)
  const addCat=()=>{const v=c.trim();if(!v)return;if(db.categories.some(x=>x.toLowerCase()===v.toLowerCase()))return alert('Category already exists');safely(()=>S.addCategory(v));setC('');setF(v)}
  const list=db.menu.filter(m=>!f||m.cat===f)
@@ -143,16 +153,8 @@ function MenuPhotos({db}){const[c,setC]=useState(''),[f,setF]=useState(''),[n,se
    {m.img?<img src={m.img} alt={m.name} onError={e=>e.target.style.display='none'} className="w-20 h-20 rounded-xl object-cover"/>:<div className="w-20 h-20 rounded-xl bg-cream flex items-center justify-center text-4xl">{m.emoji}</div>}
    <div className="flex-1 min-w-0"><b className="block truncate">{m.name}</b>
     <select className="inp py-1 text-sm my-1" aria-label="Category" value={m.cat} onChange={x=>safely(()=>S.saveItem({...m,cat:x.target.value}))}>{db.categories.map(k=><option key={k}>{k}</option>)}</select>
-    <div className="flex gap-2 items-center flex-wrap"><PhotoBtn onPick={d=>safely(()=>S.saveItem({...m,img:d}))}>{m.img?'Change photo':'Add photo'}</PhotoBtn>{m.img&&<button className="text-sm underline" onClick={()=>confirm('Remove this photo?')&&safely(()=>S.saveItem({...m,img:''}))}>Remove</button>}</div></div></div>)}</div>
-  {n&&<Sheet title="New dish with photo" onClose={()=>setN(null)}><div className="space-y-2">
-   {n.img?<img src={n.img} alt="Preview" className="w-full h-44 rounded-xl object-cover"/>:<div className="w-full h-44 rounded-xl bg-cream flex items-center justify-center text-6xl">{n.emoji}</div>}
-   <PhotoBtn cls="btn gld w-full flex gap-2 items-center justify-center" onPick={d=>setN({...n,img:d})}><Camera size={18}/>{n.img?'Change photo':'Take / choose photo'}</PhotoBtn>
-   <input className="inp" placeholder="Dish name" value={n.name} onChange={x=>setN({...n,name:x.target.value})}/>
-   <input className="inp" placeholder="Description (optional)" value={n.desc} onChange={x=>setN({...n,desc:x.target.value})}/>
-   <input className="inp" type="number" min="0" placeholder="Price" value={n.price} onChange={x=>setN({...n,price:x.target.value})}/>
-   <select className="inp" value={n.cat} onChange={x=>setN({...n,cat:x.target.value})}>{db.categories.map(k=><option key={k}>{k}</option>)}</select>
-   <label><input type="checkbox" checked={n.veg} onChange={()=>setN({...n,veg:!n.veg})}/> Veg</label>
-   <button className="btn pri w-full" onClick={()=>{if(!n.name.trim())return alert('Dish name required');if(safely(()=>S.saveItem({...n,name:n.name.trim(),price:+n.price||0})))setN(null)}}>Save dish</button></div></Sheet>}</div>}
+    <div className="flex gap-2 items-center flex-wrap"><button className="btn gld py-1 text-sm" onClick={()=>setN(m)}>Edit</button><PhotoBtn onPick={d=>safely(()=>S.saveItem({...m,img:d}))}>{m.img?'Change photo':'Add photo'}</PhotoBtn>{m.img&&<button className="text-sm underline" onClick={()=>confirm('Remove this photo?')&&safely(()=>S.saveItem({...m,img:''}))}>Remove</button>}</div></div></div>)}</div>
+  {n&&<DishSheet e={n} setE={setN} db={db}/>}</div>}
 
 function QRCard({r,k,base}){const[u,setU]=useState('');const url=`${base}/room?room=${r}&k=${k}`
  useEffect(()=>{QRCode.toDataURL(url,{width:400,margin:1,color:{dark:'#3A3A38'}}).then(setU)},[url])
