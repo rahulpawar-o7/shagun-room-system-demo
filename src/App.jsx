@@ -1,13 +1,14 @@
 import {useState,useEffect,useRef} from 'react'
 import {BrowserRouter,Routes,Route,Link,useNavigate,useSearchParams,useParams,Navigate} from 'react-router-dom'
 import QRCode from 'qrcode'
-import {ShoppingBag,BellRing,Sparkles,Shirt,Wrench,Phone,Bath,Plus,Minus,X,Volume2,VolumeX,Zap,Check,Trash2,Download,Printer,RefreshCw} from 'lucide-react'
+import {ShoppingBag,BellRing,Sparkles,Shirt,Wrench,Phone,Bath,Plus,Minus,X,Volume2,VolumeX,Zap,Check,Trash2,Download,Printer,RefreshCw,Camera,ImagePlus} from 'lucide-react'
 import {HOTEL,rooms} from './hotel.config'
 import * as S from './lib/store'
-const formatPrice = n => HOTEL.currency + n
+const rs=n=>HOTEL.currency+n
 const ROLES={HK:'Housekeeping',RS:'Room Service / Kitchen',MT:'Maintenance',RC:'Reception'}
 const TYPES={food:'Food Order',cleaning:'Room Cleaning',towels:'Towels & Amenities',laundry:'Laundry',maintenance:'Maintenance',reception:'Call Reception'}
 const ROLE_TYPES={HK:['cleaning','towels','laundry'],RS:['food'],MT:['maintenance'],RC:Object.keys(TYPES)}
+const PHOTO_ROLES=['RS','RC'] // staff roles allowed to add food photos / categories (RS=Kitchen, RC=Reception)
 const FOOD=['new','accepted','preparing','onway','delivered'],SERV=['new','accepted','done']
 const LBL={new:'Received',accepted:'Accepted',preparing:'Preparing',onway:'On the way',delivered:'Delivered',done:'Done',cancelled:'Cancelled'}
 const flow=r=>r.type==='food'?FOOD:SERV
@@ -42,12 +43,12 @@ function Guest(){const[q]=useSearchParams(),room=q.get('room'),k=q.get('k'),db=S
   <div className="p-3 space-y-3">{db.menu.filter(m=>m.cat===cat).map(m=><div key={m.id} className={`card p-3 flex gap-3 ${m.available?'':'opacity-50 grayscale'}`}>
    {m.img?<img src={m.img} onError={e=>e.target.style.display='none'} className="w-20 h-20 rounded-xl object-cover"/>:<div className="w-20 h-20 rounded-xl bg-cream flex items-center justify-center text-4xl">{m.emoji}</div>}
    <div className="flex-1"><div className="flex items-center gap-2"><span className={`w-3 h-3 border-2 ${m.veg?'border-green-600':'border-red-600'} flex items-center justify-center`}><i className={`w-1.5 h-1.5 rounded-full ${m.veg?'bg-green-600':'bg-red-600'}`}/></span><b>{m.name}</b></div><p className="text-sm text-ink/70">{m.desc}</p>
-   <div className="flex justify-between items-center mt-1"><b>{formatPrice(m.price)}</b>{!m.available?<span className="text-sm">Unavailable</span>:cart[m.id]?<div className="flex items-center gap-3 bg-ink text-cream rounded-xl px-2 py-1"><button aria-label="Remove one" onClick={()=>set(m.id,-1)}><Minus size={18}/></button>{cart[m.id]}<button aria-label="Add one" onClick={()=>set(m.id,1)}><Plus size={18}/></button></div>:<button className="btn gld py-1" onClick={()=>set(m.id,1)}>Add</button>}</div></div></div>)}</div>
-  {count>0&&<button onClick={()=>setDrawer(true)} className="fixed bottom-4 left-4 right-4 z-30 btn pri flex justify-between"><span>{count} items</span><span>View Cart · {formatPrice(total)}</span></button>}</div>}
+   <div className="flex justify-between items-center mt-1"><b>{rs(m.price)}</b>{!m.available?<span className="text-sm">Unavailable</span>:cart[m.id]?<div className="flex items-center gap-3 bg-ink text-cream rounded-xl px-2 py-1"><button aria-label="Remove one" onClick={()=>set(m.id,-1)}><Minus size={18}/></button>{cart[m.id]}<button aria-label="Add one" onClick={()=>set(m.id,1)}><Plus size={18}/></button></div>:<button className="btn gld py-1" onClick={()=>set(m.id,1)}>Add</button>}</div></div></div>)}</div>
+  {count>0&&<button onClick={()=>setDrawer(true)} className="fixed bottom-4 left-4 right-4 z-30 btn pri flex justify-between"><span>{count} items</span><span>View Cart · {rs(total)}</span></button>}</div>}
  {view==='service'&&<div className="p-4 grid grid-cols-2 gap-3 pop">{SV.map(([t,I,subs])=><button key={t} onClick={()=>{setSheet({t,subs});setSub('');setNote('')}} className="card p-5 flex flex-col items-center gap-2 active:scale-95 transition"><I size={32} className="text-gold"/><span className="text-center font-semibold">{TYPES[t]}</span></button>)}</div>}
  {view!=='home'&&<button onClick={()=>setView('home')} className="fixed top-[76px] right-3 z-20 text-xs underline">← Home</button>}
- {drawer&&<Sheet title="Your Cart" onClose={()=>setDrawer(false)}>{db.menu.filter(m=>cart[m.id]).map(m=><div key={m.id} className="flex justify-between items-center py-2"><span>{m.name}</span><div className="flex items-center gap-3"><button onClick={()=>set(m.id,-1)}><Minus size={16}/></button>{cart[m.id]}<button onClick={()=>set(m.id,1)}><Plus size={16}/></button><b className="w-16 text-right">{formatPrice(m.price*cart[m.id])}</b></div></div>)}
-  <textarea className="inp my-3" placeholder="Special instructions" value={note} onChange={e=>setNote(e.target.value)}/><button className="btn pri w-full" onClick={()=>{const id=S.placeOrder(room,items,note);setCart({});go(id)}}>Place Order · {formatPrice(total)}</button></Sheet>}
+ {drawer&&<Sheet title="Your Cart" onClose={()=>setDrawer(false)}>{db.menu.filter(m=>cart[m.id]).map(m=><div key={m.id} className="flex justify-between items-center py-2"><span>{m.name}</span><div className="flex items-center gap-3"><button onClick={()=>set(m.id,-1)}><Minus size={16}/></button>{cart[m.id]}<button onClick={()=>set(m.id,1)}><Plus size={16}/></button><b className="w-16 text-right">{rs(m.price*cart[m.id])}</b></div></div>)}
+  <textarea className="inp my-3" placeholder="Special instructions" value={note} onChange={e=>setNote(e.target.value)}/><button className="btn pri w-full" onClick={()=>{const id=S.placeOrder(room,items,note);setCart({});go(id)}}>Place Order · {rs(total)}</button></Sheet>}
  {sheet&&<Sheet title={TYPES[sheet.t]} onClose={()=>setSheet(null)}><div className="flex flex-wrap gap-2 mb-3">{sheet.subs.map(s=><button key={s} onClick={()=>setSub(s)} className={`btn py-2 ${sub===s?'pri':'bg-cream'}`}>{s}</button>)}</div>
   <textarea className="inp mb-3" placeholder="Note (optional)" value={note} onChange={e=>setNote(e.target.value)}/><button className="btn pri w-full" onClick={()=>go(S.createRequest(room,sheet.t,sub,note))}>Submit</button></Sheet>}</div>}
 
@@ -65,7 +66,7 @@ function StaffLogin(){const n=useNavigate(),[id,setId]=useState(''),[p,setP]=use
  <div className="flex flex-wrap gap-2 justify-center max-w-sm">{['HK-01','HK-02','RS-01','MT-01','RC-01'].map(s=><button key={s} className="btn bg-cream py-2" onClick={()=>go(s,HOTEL.staffPass)}>{s}</button>)}</div></div>}
 
 function Staff(){const db=S.useDB();S.useTick();const n=useNavigate(),me=db.staff.find(s=>s.id===sessionStorage.getItem('staff'))
- const[tab,setTab]=useState('new'),[fl,setFl]=useState(0),[tf,setTf]=useState(''),[mute,setMute]=useState(false),seen=useRef(null)
+ const[tab,setTab]=useState('new'),[fl,setFl]=useState(0),[tf,setTf]=useState(''),[mute,setMute]=useState(false),[showPh,setShowPh]=useState(false),seen=useRef(null)
  const mine=me?db.reqs.filter(r=>ROLE_TYPES[me.role].includes(r.type)&&(me.role==='RC'||me.floors.includes(r.floor))):[]
  const pend=mine.filter(r=>r.status==='new').length
  useEffect(()=>{if(seen.current!==null&&pend>seen.current&&!mute)beep();seen.current=pend},[pend])
@@ -73,18 +74,19 @@ function Staff(){const db=S.useDB();S.useTick();const n=useNavigate(),me=db.staf
  const sel=mine.filter(r=>(tab==='new'?r.status==='new':tab==='prog'?['accepted','preparing','onway'].includes(r.status):['delivered','done'].includes(r.status))&&(!fl||r.floor===fl)&&(!tf||r.type===tf))
  const bill=room=>db.reqs.filter(r=>r.room===room&&r.type==='food'&&r.status==='delivered').reduce((s,r)=>s+r.total,0)
  return <div className="min-h-screen pb-20"><Head><div className="text-right text-xs"><b className="text-sm">{me.name}</b><br/>{ROLES[me.role]} · Floors {me.floors.join(',')}</div></Head>
+ {showPh?<div className="p-3 max-w-5xl mx-auto"><button className="btn bg-cream py-2 mb-3" onClick={()=>setShowPh(false)}>← Back to requests</button><MenuPhotos db={db}/></div>:<>
  <div className="p-3 flex gap-2 items-center"><div className="flex-1 flex gap-2">{[['new',`New (${pend})`],['prog','In Progress'],['done','Completed']].map(([t,l])=><button key={t} onClick={()=>setTab(t)} className={`btn py-2 flex-1 text-sm ${tab===t?'pri':'bg-cream'}`}>{l}</button>)}</div>
-  <button aria-label="Toggle sound" onClick={()=>setMute(!mute)}>{mute?<VolumeX/>:<Volume2/>}</button><button className="text-sm underline" onClick={()=>{sessionStorage.clear();n('/staff/login')}}>Logout</button></div>
+  {PHOTO_ROLES.includes(me.role)&&<button aria-label="Menu photos" onClick={()=>setShowPh(true)}><Camera/></button>}<button aria-label="Toggle sound" onClick={()=>setMute(!mute)}>{mute?<VolumeX/>:<Volume2/>}</button><button className="text-sm underline" onClick={()=>{sessionStorage.clear();n('/staff/login')}}>Logout</button></div>
  <div className="px-3 flex gap-2 overflow-x-auto pb-2">{[0,...HOTEL.floors].map(f=><button key={f} onClick={()=>setFl(f)} className={`rounded-full px-3 py-1 text-sm ${fl===f?'bg-gold text-white':'bg-cream'}`}>{f?`Floor ${f}`:'All'}</button>)}
   {me.role==='RC'&&<select className="rounded-full bg-cream px-2 text-sm" value={tf} onChange={e=>setTf(e.target.value)}><option value="">All types</option>{Object.entries(TYPES).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>}</div>
  <div className="p-3 grid gap-3 md:grid-cols-2">{sel.length===0&&<p className="text-center text-ink/60 col-span-2 py-10">Nothing here yet 🎉</p>}
  {sel.map(r=>{const f=flow(r),nx=f[f.indexOf(r.status)+1],taken=r.by&&r.by!==me.id&&me.role!=='RC',late=mins(r.createdAt)>=10&&r.status==='new',by=db.staff.find(s=>s.id===r.by)
   return <div key={r.id} className={`card p-4 pop ${r.status==='new'?'ring-2 ring-gold':''}`}><div className="flex justify-between"><span className="bg-black text-gold rounded-full px-3 font-bold">Room {r.room}</span><span className="text-sm">Floor {r.floor}</span></div>
   <h3 className="text-xl font-bold mt-1">{TYPES[r.type]}{r.sub&&` · ${r.sub}`}</h3>{r.note&&<p className="text-sm italic">“{r.note}”</p>}
-  {r.items&&<ul className="text-sm my-1">{r.items.map((i,k)=><li key={k}>{i.qty}× {i.name}</li>)}<li className="font-bold">Total {formatPrice(r.total)}</li></ul>}
+  {r.items&&<ul className="text-sm my-1">{r.items.map((i,k)=><li key={k}>{i.qty}× {i.name}</li>)}<li className="font-bold">Total {rs(r.total)}</li></ul>}
   <p className={`text-sm ${late?'text-red-600 font-bold':'text-ink/60'}`}>{r.status==='new'?`Waiting ${mins(r.createdAt)} min`:`${LBL[r.status]}${by?` · ${by.name}`:''}`}</p>
-  {me.role==='RC'&&r.type==='food'&&<p className="text-xs">Room bill: {formatPrice(bill(r.room))}</p>}
-  {taken?<p className="text-sm font-semibold mt-2">Taken by {by?.name}</p>:nx&&r.status!=='cancelled'&&<button className="btn gld w-full mt-2" onClick={()=>r.status==='new'?(S.acceptByStaff(r.id,me)||alert('Already taken')):S.updateStatus(r.id,nx)}>{r.status==='new'?'Accept':`Mark ${LBL[nx]}`}</button>}</div>})}</div><SimBtn/></div>}
+  {me.role==='RC'&&r.type==='food'&&<p className="text-xs">Room bill: {rs(bill(r.room))}</p>}
+  {taken?<p className="text-sm font-semibold mt-2">Taken by {by?.name}</p>:nx&&r.status!=='cancelled'&&<button className="btn gld w-full mt-2" onClick={()=>r.status==='new'?(S.acceptByStaff(r.id,me)||alert('Already taken')):S.updateStatus(r.id,nx)}>{r.status==='new'?'Accept':`Mark ${LBL[nx]}`}</button>}</div>})}</div></>}<SimBtn/></div>}
 
 function AdminLogin(){const n=useNavigate(),[u,setU]=useState(''),[p,setP]=useState('')
  return <div className="min-h-screen bg-black p-6 flex flex-col items-center justify-center gap-3"><Logo h={110}/><input className="inp max-w-xs" placeholder="Username" value={u} onChange={e=>setU(e.target.value)}/><input className="inp max-w-xs" type="password" placeholder="Password" value={p} onChange={e=>setP(e.target.value)}/>
@@ -93,13 +95,13 @@ function AdminLogin(){const n=useNavigate(),[u,setU]=useState(''),[p,setP]=useSt
 function Admin(){const db=S.useDB();S.useTick();const n=useNavigate(),[tab,setTab]=useState('Overview')
  if(!sessionStorage.getItem('owner'))return <Navigate to="/admin/login"/>
  return <div className="min-h-screen"><Head><button className="text-sm underline" onClick={()=>{sessionStorage.clear();n('/')}}>Logout</button></Head>
- <nav className="noprint flex gap-2 p-3 overflow-x-auto">{['Overview','Staff','Menu','Rooms & QR','History'].map(t=><button key={t} onClick={()=>setTab(t)} className={`btn py-2 whitespace-nowrap ${tab===t?'pri':'bg-cream'}`}>{t}</button>)}</nav>
- <main className="p-3 max-w-5xl mx-auto">{tab==='Overview'&&<Overview db={db}/>}{tab==='Staff'&&<StaffMgmt db={db}/>}{tab==='Menu'&&<MenuMgmt db={db}/>}{tab==='Rooms & QR'&&<QRs db={db}/>}{tab==='History'&&<History db={db}/>}</main><SimBtn/></div>}
+ <nav className="noprint flex gap-2 p-3 overflow-x-auto">{['Overview','Staff','Menu','Menu Photos','Rooms & QR','History'].map(t=><button key={t} onClick={()=>setTab(t)} className={`btn py-2 whitespace-nowrap ${tab===t?'pri':'bg-cream'}`}>{t}</button>)}</nav>
+ <main className="p-3 max-w-5xl mx-auto">{tab==='Overview'&&<Overview db={db}/>}{tab==='Staff'&&<StaffMgmt db={db}/>}{tab==='Menu'&&<MenuMgmt db={db}/>}{tab==='Menu Photos'&&<MenuPhotos db={db}/>}{tab==='Rooms & QR'&&<QRs db={db}/>}{tab==='History'&&<History db={db}/>}</main><SimBtn/></div>}
 
 function Overview({db}){const day=new Date().setHours(0,0,0,0),td=db.reqs.filter(r=>r.createdAt>=day),food=td.filter(r=>r.type==='food'&&r.status!=='cancelled'),done=db.reqs.filter(r=>r.acceptedAt&&r.createdAt)
  const avg=done.length?Math.round(done.reduce((s,r)=>s+(r.acceptedAt-r.createdAt),0)/done.length/6e4):0
  const C=({t,v})=><div className="card p-4"><p className="text-sm text-ink/60">{t}</p><p className="ser text-3xl font-bold">{v}</p></div>
- return <div className="space-y-4"><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><C t="Food orders today" v={food.length}/><C t="Food value" v={formatPrice(food.reduce((s,r)=>s+r.total,0))}/><C t="Pending" v={db.reqs.filter(r=>r.status==='new').length}/><C t="Avg response" v={`${avg} min`}/></div>
+ return <div className="space-y-4"><div className="grid grid-cols-2 md:grid-cols-4 gap-3"><C t="Food orders today" v={food.length}/><C t="Food value" v={rs(food.reduce((s,r)=>s+r.total,0))}/><C t="Pending" v={db.reqs.filter(r=>r.status==='new').length}/><C t="Avg response" v={`${avg} min`}/></div>
  <div className="card p-4"><h3 className="font-bold mb-2">Service requests by type</h3>{Object.entries(TYPES).filter(([k])=>k!=='food').map(([k,v])=><p key={k} className="flex justify-between"><span>{v}</span><b>{td.filter(r=>r.type===k).length}</b></p>)}</div>
  <div className="card p-4"><h3 className="font-bold mb-2">Live feed</h3>{db.reqs.slice(0,8).map(r=><p key={r.id} className="text-sm py-1 border-b border-cream">Room {r.room} · {TYPES[r.type]} · <b>{LBL[r.status]}</b> · {mins(r.createdAt)}m ago</p>)}</div></div>}
 
@@ -114,11 +116,43 @@ function StaffMgmt({db}){const[e,setE]=useState(null)
 
 function MenuMgmt({db}){const[e,setE]=useState(null),[c,setC]=useState('')
  return <div><div className="flex gap-2 mb-3"><button className="btn gld" onClick={()=>setE({name:'',cat:db.categories[0],price:0,desc:'',veg:true,img:'',emoji:'🍽️',available:true})}>+ Add item</button><input className="inp max-w-[160px]" placeholder="New category" value={c} onChange={x=>setC(x.target.value)}/><button className="btn bg-cream" onClick={()=>{S.addCategory(c);setC('')}}>Add</button></div>
- <div className="grid md:grid-cols-2 gap-2">{db.menu.map(m=><div key={m.id} className="card p-3 flex justify-between items-center"><div><b>{m.name}</b><p className="text-xs">{m.cat} · {formatPrice(m.price)} · {m.veg?'Veg':'Non-veg'}</p></div><div className="flex gap-2 items-center"><label className="text-xs"><input type="checkbox" checked={m.available} onChange={()=>S.saveItem({...m,available:!m.available})}/> Avail</label><button className="underline text-sm" onClick={()=>setE(m)}>Edit</button><button aria-label="Delete" onClick={()=>S.removeItem(m.id)}><Trash2 size={14}/></button></div></div>)}</div>
+ <div className="grid md:grid-cols-2 gap-2">{db.menu.map(m=><div key={m.id} className="card p-3 flex justify-between items-center"><div><b>{m.name}</b><p className="text-xs">{m.cat} · {rs(m.price)} · {m.veg?'Veg':'Non-veg'}</p></div><div className="flex gap-2 items-center"><label className="text-xs"><input type="checkbox" checked={m.available} onChange={()=>S.saveItem({...m,available:!m.available})}/> Avail</label><button className="underline text-sm" onClick={()=>setE(m)}>Edit</button><button aria-label="Delete" onClick={()=>S.removeItem(m.id)}><Trash2 size={14}/></button></div></div>)}</div>
  {e&&<Sheet title="Menu item" onClose={()=>setE(null)}><div className="space-y-2"><input className="inp" placeholder="Name" value={e.name} onChange={x=>setE({...e,name:x.target.value})}/><input className="inp" placeholder="Description" value={e.desc} onChange={x=>setE({...e,desc:x.target.value})}/>
  <input className="inp" type="number" placeholder="Price" value={e.price} onChange={x=>setE({...e,price:+x.target.value})}/><select className="inp" value={e.cat} onChange={x=>setE({...e,cat:x.target.value})}>{db.categories.map(k=><option key={k}>{k}</option>)}</select>
  <input className="inp" placeholder="Image URL" value={e.img} onChange={x=>setE({...e,img:x.target.value})}/>{e.img&&<img src={e.img} className="h-24 rounded-xl"/>}<label><input type="checkbox" checked={e.veg} onChange={()=>setE({...e,veg:!e.veg})}/> Veg</label>
  <button className="btn pri w-full" onClick={()=>{S.saveItem(e);setE(null)}}>Save</button></div></Sheet>}</div>}
+
+// ---- Menu Photos: owner + kitchen/reception staff can add food photos, new dishes and new categories ----
+const shrink=(file,max=640)=>new Promise((ok,no)=>{const img=new Image(),u=URL.createObjectURL(file)
+ img.onload=()=>{const k=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k)
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.72))}
+ img.onerror=()=>{URL.revokeObjectURL(u);no()};img.src=u})
+const safely=fn=>{try{fn();return true}catch{alert('Could not save – browser storage is full. Try a smaller photo or remove unused photos.');return false}}
+function PhotoBtn({onPick,children,cls='btn bg-cream py-1 text-sm'}){const r=useRef(null)
+ return <><input ref={r} type="file" accept="image/*" className="hidden" onChange={async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{onPick(await shrink(f))}catch{alert('Please choose an image file')}}}/>
+ <button type="button" className={cls} onClick={()=>r.current.click()}>{children}</button></>}
+function MenuPhotos({db}){const[c,setC]=useState(''),[f,setF]=useState(''),[n,setN]=useState(null)
+ const addCat=()=>{const v=c.trim();if(!v)return;if(db.categories.some(x=>x.toLowerCase()===v.toLowerCase()))return alert('Category already exists');safely(()=>S.addCategory(v));setC('');setF(v)}
+ const list=db.menu.filter(m=>!f||m.cat===f)
+ return <div className="space-y-3">
+  <div className="card p-3"><h3 className="font-bold mb-2">New food category</h3><div className="flex gap-2"><input className="inp" placeholder="e.g. Soups, Chinese, Snacks" value={c} onChange={x=>setC(x.target.value)} onKeyDown={x=>x.key==='Enter'&&addCat()}/><button className="btn gld" onClick={addCat}>Add</button></div></div>
+  <button className="btn gld flex gap-2 items-center" onClick={()=>setN({name:'',cat:f||db.categories[0],price:'',desc:'',veg:true,img:'',emoji:'🍽️',available:true})}><ImagePlus size={18}/>Add new dish with photo</button>
+  <div className="flex gap-2 overflow-x-auto pb-1">{['',...db.categories].map(k=><button key={k||'all'} onClick={()=>setF(k)} className={`btn py-2 whitespace-nowrap ${f===k?'pri':'bg-cream'}`}>{k||'All'} ({k?db.menu.filter(m=>m.cat===k).length:db.menu.length})</button>)}</div>
+  {list.length===0&&<p className="text-center text-ink/60 py-6">No dishes in this category yet. Use “Add new dish with photo”.</p>}
+  <div className="grid sm:grid-cols-2 gap-2">{list.map(m=><div key={m.id} className="card p-3 flex gap-3">
+   {m.img?<img src={m.img} alt={m.name} onError={e=>e.target.style.display='none'} className="w-20 h-20 rounded-xl object-cover"/>:<div className="w-20 h-20 rounded-xl bg-cream flex items-center justify-center text-4xl">{m.emoji}</div>}
+   <div className="flex-1 min-w-0"><b className="block truncate">{m.name}</b>
+    <select className="inp py-1 text-sm my-1" aria-label="Category" value={m.cat} onChange={x=>safely(()=>S.saveItem({...m,cat:x.target.value}))}>{db.categories.map(k=><option key={k}>{k}</option>)}</select>
+    <div className="flex gap-2 items-center flex-wrap"><PhotoBtn onPick={d=>safely(()=>S.saveItem({...m,img:d}))}>{m.img?'Change photo':'Add photo'}</PhotoBtn>{m.img&&<button className="text-sm underline" onClick={()=>confirm('Remove this photo?')&&safely(()=>S.saveItem({...m,img:''}))}>Remove</button>}</div></div></div>)}</div>
+  {n&&<Sheet title="New dish with photo" onClose={()=>setN(null)}><div className="space-y-2">
+   {n.img?<img src={n.img} alt="Preview" className="w-full h-44 rounded-xl object-cover"/>:<div className="w-full h-44 rounded-xl bg-cream flex items-center justify-center text-6xl">{n.emoji}</div>}
+   <PhotoBtn cls="btn gld w-full flex gap-2 items-center justify-center" onPick={d=>setN({...n,img:d})}><Camera size={18}/>{n.img?'Change photo':'Take / choose photo'}</PhotoBtn>
+   <input className="inp" placeholder="Dish name" value={n.name} onChange={x=>setN({...n,name:x.target.value})}/>
+   <input className="inp" placeholder="Description (optional)" value={n.desc} onChange={x=>setN({...n,desc:x.target.value})}/>
+   <input className="inp" type="number" min="0" placeholder="Price" value={n.price} onChange={x=>setN({...n,price:x.target.value})}/>
+   <select className="inp" value={n.cat} onChange={x=>setN({...n,cat:x.target.value})}>{db.categories.map(k=><option key={k}>{k}</option>)}</select>
+   <label><input type="checkbox" checked={n.veg} onChange={()=>setN({...n,veg:!n.veg})}/> Veg</label>
+   <button className="btn pri w-full" onClick={()=>{if(!n.name.trim())return alert('Dish name required');if(safely(()=>S.saveItem({...n,name:n.name.trim(),price:+n.price||0})))setN(null)}}>Save dish</button></div></Sheet>}</div>}
 
 function QRCard({r,k,base}){const[u,setU]=useState('');const url=`${base}/room?room=${r}&k=${k}`
  useEffect(()=>{QRCode.toDataURL(url,{width:400,margin:1,color:{dark:'#3A3A38'}}).then(setU)},[url])
@@ -135,7 +169,7 @@ function History({db}){const[t,setT]=useState(''),[s,setS]=useState(''),[q,setQ]
  const csv=()=>{const rows=[['Room','Type','Detail','Status','Total','Created'],...l.map(r=>[r.room,TYPES[r.type],`${r.sub} ${r.note}`.trim(),r.status,r.total||'',new Date(r.createdAt).toLocaleString()])];const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(x=>x.map(c=>`"${c}"`).join(',')).join('\n')]));a.download='history.csv';a.click()}
  return <div><div className="flex gap-2 flex-wrap mb-3"><select className="inp max-w-[160px]" onChange={e=>setT(e.target.value)}><option value="">All types</option>{Object.entries(TYPES).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select>
  <select className="inp max-w-[140px]" onChange={e=>setS(e.target.value)}><option value="">All status</option>{Object.entries(LBL).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><input className="inp max-w-[120px]" placeholder="Room" onChange={e=>setQ(e.target.value)}/><button className="btn gld" onClick={csv}>Export CSV</button></div>
- <div className="card divide-y divide-cream">{l.map(r=><p key={r.id} className="p-2 text-sm flex justify-between"><span>Room {r.room} · {TYPES[r.type]} {r.total?`· ${formatPrice(r.total)}`:''}</span><span>{LBL[r.status]} · {new Date(r.createdAt).toLocaleString()}</span></p>)}</div></div>}
+ <div className="card divide-y divide-cream">{l.map(r=><p key={r.id} className="p-2 text-sm flex justify-between"><span>Room {r.room} · {TYPES[r.type]} {r.total?`· ${rs(r.total)}`:''}</span><span>{LBL[r.status]} · {new Date(r.createdAt).toLocaleString()}</span></p>)}</div></div>}
 
 export default function App(){return <BrowserRouter><Routes><Route path="/" element={<Launcher/>}/><Route path="/room" element={<Guest/>}/><Route path="/room/track/:id" element={<Track/>}/>
  <Route path="/staff/login" element={<StaffLogin/>}/><Route path="/staff" element={<Staff/>}/><Route path="/admin/login" element={<AdminLogin/>}/><Route path="/admin" element={<Admin/>}/></Routes></BrowserRouter>}
