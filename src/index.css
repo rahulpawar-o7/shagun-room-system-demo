@@ -1,0 +1,7 @@
+@tailwind base;@tailwind components;@tailwind utilities;
+body{@apply bg-ivory text-ink font-sans}h1,h2,h3,.ser{@apply font-serif}
+.btn{@apply rounded-xl px-4 py-3 font-semibold transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-gold}
+.pri{@apply bg-ink text-cream}.gld{@apply bg-gold text-white}.card{@apply bg-white rounded-2xl shadow-md border border-cream}
+.inp{@apply w-full border border-sand rounded-xl px-3 py-2 bg-ivory focus:outline-none focus:ring-2 focus:ring-gold}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1}}.pop{animation:pop .3s}
+@media print{.noprint{display:none!important}}
