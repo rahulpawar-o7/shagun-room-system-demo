@@ -3,6 +3,7 @@ import {useState,useEffect} from 'react'
 import {HOTEL,rooms} from '../hotel.config'
 const K='shagun_db',ch=typeof BroadcastChannel!=='undefined'?new BroadcastChannel('shagun'):null,subs=new Set()
 const rk=()=>Math.random().toString(36).slice(2,10),now=()=>Date.now()
+const IMG=['masala-omelette', 'aloo-paratha', 'idli-sambar', 'paneer-tikka', 'chicken-tikka', 'veg-spring-rolls', 'butter-chicken', 'dal-makhani', 'paneer-butter-masala', 'veg-biryani', 'butter-naan', 'jeera-rice', 'masala-chai', 'cold-coffee', 'fresh-lime-soda', 'gulab-jamun', 'chocolate-brownie', 'rasmalai']
 const M=[['Breakfast','Masala Omelette',0,180,'Three-egg omelette with onion, chilli, coriander','🍳'],['Breakfast','Aloo Paratha',1,160,'Stuffed wheat flatbread with curd and pickle','🫓'],['Breakfast','Idli Sambar',1,140,'Steamed rice cakes, sambar, coconut chutney','🍚'],
 ['Starters','Paneer Tikka',1,320,'Tandoori cottage cheese with mint chutney','🍢'],['Starters','Chicken Tikka',0,380,'Charcoal-grilled marinated chicken','🍗'],['Starters','Veg Spring Rolls',1,240,'Crisp rolls with sweet chilli dip','🥟'],
 ['Main Course','Butter Chicken',0,450,'Creamy tomato gravy, tandoori chicken','🍛'],['Main Course','Dal Makhani',1,320,'Slow-cooked black lentils with butter','🥘'],['Main Course','Paneer Butter Masala',1,380,'Cottage cheese in rich tomato gravy','🍲'],['Main Course','Veg Biryani',1,340,'Fragrant basmati with vegetables and raita','🍚'],
@@ -12,7 +13,7 @@ const M=[['Breakfast','Masala Omelette',0,180,'Three-egg omelette with onion, ch
 const st=(id,name,role,floors)=>({id,name,role,floors,phone:'98000000'+id.slice(-2),email:id.toLowerCase()+'@shagun.com',active:true})
 function seed(){const t=now(),R=rooms(),mk=(n,type,sub,status,ago,x={})=>({id:rk(),room:n,floor:Math.floor(n/100),type,sub,note:'',status,createdAt:t-ago*6e4,...x})
  return{categories:['Breakfast','Starters','Main Course','Breads and Rice','Beverages','Desserts'],
- menu:M.map((m,i)=>({id:'m'+i,cat:m[0],name:m[1],veg:!!m[2],price:m[3],desc:m[4],emoji:m[5],img:'',available:i!==4})),
+ menu:M.map((m,i)=>({id:'m'+i,cat:m[0],name:m[1],veg:!!m[2],price:m[3],desc:m[4],emoji:m[5],img:'/menu/'+IMG[i]+'.jpg',available:i!==4})),
  keys:Object.fromEntries(R.map(r=>[r,rk()])),
  staff:[st('HK-01','Sunita Devi','HK',[1,2]),st('HK-02','Ramesh Kumar','HK',[3]),st('HK-03','Meena Joshi','HK',[4]),st('HK-04','Pooja Singh','HK',[5,6]),
  st('RS-01','Amit Chef','RS',[1,2,3,4,5,6]),st('RS-02','Vikram Rao','RS',[1,2,3,4,5,6]),st('MT-01','Suresh Yadav','MT',[1,2,3,4,5,6]),st('MT-02','Deepak Nair','MT',[1,2,3,4,5,6]),
